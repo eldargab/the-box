@@ -269,8 +269,13 @@ describe('App', function () {
                 throw 'error'
             })
 
-            app.onerror('foo', function () {
+            app.onerror('foo', function (err) {
                 this.get('&/bar').should.equal('bar')
+                throw err
+            })
+
+            app.onerror(function () {
+                this.should.equal(app)
                 done()
             })
 
