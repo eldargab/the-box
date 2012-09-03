@@ -1,5 +1,4 @@
 var sinon = require('sinon')
-var should = require('should')
 var App = require('../lib/app')
 
 describe('App', function () {
@@ -85,9 +84,9 @@ describe('App', function () {
                 xc = done
             }).eval('a', cb)
 
-            should.not.exist(xxb)
+            assert.not.exist(xxb)
             xc()
-            should.not.exist(a)
+            assert.not.exist(a)
             xxb()
             a()
             cb.hasValue()
@@ -110,10 +109,8 @@ describe('App', function () {
             app.get('bar').should.equal('bar')
         })
 
-        it('Throws if box is undefined', function () {
-            ;(function () {
-                app.get('undefined')
-            }).should.throw()
+        it('Returns undefined if box is not defined', function () {
+            assert.not.exist(app.get('undefined'))
         })
 
         it('Throws if box is not evaluated', function () {

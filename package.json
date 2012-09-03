@@ -8,6 +8,7 @@
   "repository": "https://github.com/eldargab/the-box.git",
   "devDependencies": {
     "should": "*",
+    "should-as-global": "*",
     "mocha": "*",
     "sinon": "*"
   },
