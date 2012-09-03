@@ -1,0 +1,16 @@
+{
+  "name": "the-box",
+  "version": "0.0.0",
+  "description": "Build systems style computational model for the web",
+  "scripts": {
+    "test": "mocha -R spec"
+  },
+  "repository": "https://github.com/eldargab/the-box.git",
+  "devDependencies": {
+    "should": "*",
+    "mocha": "*",
+    "sinon": "*"
+  },
+  "author": "Eldar Gabdullin <eldargab@gmail.com>",
+  "license": "MIT"
+}
