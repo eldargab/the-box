@@ -23,7 +23,7 @@ describe('App', function () {
         it('Calls box function to get actual value', function () {
             var fn = sinon.stub().returns('bar')
 
-            app.on('foo', fn).eval('foo', cb)
+            app.def('foo', fn).eval('foo', cb)
 
             fn.calledOnce.should.be.true
             cb.hasValue('foo', 'bar')
@@ -32,7 +32,7 @@ describe('App', function () {
         it('If box function has arity greater then one, it is async', function () {
             var done
 
-            app.on('foo', function (get, _done) {
+            app.def('foo', function (get, _done) {
                 done = _done
             }).eval('foo', cb)
 
@@ -42,11 +42,11 @@ describe('App', function () {
         })
 
         it('Box function can get values of other boxes via getter passed in the first param', function () {
-            app.on('foo', function (get) {
+            app.def('foo', function (get) {
                 return get('bar') + get('baz')
-            }).on('bar', function () {
+            }).def('bar', function () {
                 return 'bar'
-            }).on('baz', function () {
+            }).def('baz', function () {
                 return 'baz'
             }).eval('bar').eval('baz').eval('foo', cb)
             cb.hasValue('barbaz')
@@ -54,14 +54,14 @@ describe('App', function () {
 
         it('The getter passed to the box is relative to it`s path', function () {
             function def (val) {
-                app.on(val, function () {
+                app.def(val, function () {
                     return val
                 }).eval(val)
             }
 
             def('a/b'); def('a/b/d'); def('a/b/c/d'); def('a/x/y')
 
-            app.on('a/b/c', function (get) {
+            app.def('a/b/c', function (get) {
                 return [
                     get('a/b'),
                     get('./d'),
@@ -76,11 +76,11 @@ describe('App', function () {
         it('Evaluates all box dependencies before evaluating box itself', function () {
             var a, xxb, xc
 
-            app.on('a', ['x/x/b', 'x/c'], function (_, done) {
+            app.def('a', ['x/x/b', 'x/c'], function (_, done) {
                 a = done
-            }).on('x/x/b', ['../c'], function (_, done) {
+            }).def('x/x/b', ['../c'], function (_, done) {
                 xxb = done
-            }).on('x/c', function (_, done) {
+            }).def('x/c', function (_, done) {
                 xc = done
             }).eval('a', cb)
 
@@ -103,7 +103,7 @@ describe('App', function () {
     describe('.get(key)', function () {
         it('Gets the value of evaluated box', function () {
             app.set('foo', 'foo')
-            app.on('bar', function () {return 'bar'}).eval('bar')
+            app.def('bar', function () {return 'bar'}).eval('bar')
 
             app.get('foo').should.equal('foo')
             app.get('bar').should.equal('bar')
@@ -114,7 +114,7 @@ describe('App', function () {
         })
 
         it('Throws if box is not evaluated', function () {
-            app.on('baz', function () {})
+            app.def('baz', function () {})
 
             ;(function () {
                 app.get('baz')
@@ -126,7 +126,7 @@ describe('App', function () {
         it('Creates new app instance with everything been inherited', function () {
             var launched = app
             .set('foo', 'foo')
-            .on('bar', function () {
+            .def('bar', function () {
                 return 'bar'
             })
             .eval('bar')
@@ -140,7 +140,7 @@ describe('App', function () {
         })
 
         it('Launches evaluation of passed task', function () {
-            app.on('hello', function () {
+            app.def('hello', function () {
                 return 'hello'
             }).run('hello').get('hello').should.be.equal('hello')
         })
@@ -160,7 +160,7 @@ describe('App', function () {
             proxy.get('hi').should.equal('hi')
             proxy.isReady('./hi').should.be.true
 
-            proxy.on('&/hello', function (get) {
+            proxy.def('&/hello', function (get) {
                 return get('&/world') + ' ' + get('./people')
             })
             app.set('root/hello/world', 'world')
@@ -175,7 +175,7 @@ describe('App', function () {
             var onerror = sinon.spy()
             app.onerror(onerror)
 
-            app.on('hello', function () {
+            app.def('hello', function () {
                 throw 'Hello error'
             })
 
@@ -189,7 +189,7 @@ describe('App', function () {
             var onerror = sinon.spy()
             app.onerror(onerror)
 
-            app.on('hello', function (_, done) {
+            app.def('hello', function (_, done) {
                 done('Hello error')
             })
 
@@ -199,7 +199,7 @@ describe('App', function () {
         })
 
         it('Errors are bubbling', function () {
-            app.on('hello/world/path', function () {
+            app.def('hello/world/path', function () {
                 throw 'error'
             })
 
@@ -232,7 +232,7 @@ describe('App', function () {
         })
 
         it('`raise` function passed to the handler can be used as a node style callback', function () {
-            app.on('hello', function () {
+            app.def('hello', function () {
                 throw 'Hello error'
             })
 
@@ -246,7 +246,7 @@ describe('App', function () {
         })
 
         it('Errors of the app level handler are throwed', function () {
-            app.on('hello', function () {
+            app.def('hello', function () {
                 throw 'hello'
             })
 
@@ -262,7 +262,7 @@ describe('App', function () {
         it('`this` of the handler is set to the current path`s proxy', function (done) {
             app.set('foo/bar', 'bar')
 
-            app.on('foo', function () {
+            app.def('foo', function () {
                 throw 'error'
             })
 
