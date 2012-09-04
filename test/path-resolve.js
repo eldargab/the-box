@@ -1,4 +1,4 @@
-var resolve = require('../lib/path-resolve')
+var resolve = require('../lib/util').resolvePath
 
 describe('Path resolve', function () {
     test('a/b/c', 'd/f', 'd/f')
