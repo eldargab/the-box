@@ -1,102 +1,116 @@
-var sinon = require('sinon')
 var App = require('../lib/app')
 
 describe('App', function () {
-  var app, cb
+  var app
 
-  beforeEach(function () {
-    app = new App
-    cb = sinon.spy()
-    cb.hasValue = function (val) {
-      this.calledOnce.should.be.true
-      this.calledWithExactly(val)
+  function log (s) {
+    log.string = log.string
+      ? log.string + ' ' + s
+      : s
+  }
+
+  Object.defineProperty(log, 'should', {
+    get: function () {
+      return this.string.should
     }
   })
 
-  describe('.eval(box, cb)', function () {
+  beforeEach(function () {
+    app = new App
+    log.string = ''
+  })
+
+  describe('.eval(box, [cb])', function () {
     it('Throws if box is not defined', function () {
       ;(function () {
-        app.eval('hi', cb)
+        app.eval('hi')
       }).should.throw()
     })
 
-    it('Calls box function to get actual value', function () {
-      var fn = sinon.stub().returns('bar')
-
-      app.def('foo', fn).eval('foo', cb)
-
-      fn.calledOnce.should.be.true
-      cb.hasValue('foo', 'bar')
+    it('Calls box function to get actual value', function (done) {
+      app.def('foo', function () {
+        return 'bar'
+      }).eval('foo', function (val) {
+        val.should.equal('bar')
+        done()
+      })
     })
 
-    it('If box function has arity greater then one, it is async', function () {
-      var done
+    it('If box function has arity greater then one, it is async', function (done) {
+      var end
 
-      app.def('foo', function (get, _done) {
-        done = _done
-      }).eval('foo', cb)
+      app.def('foo', function (get, _end) {
+        end = _end
+      }).eval('foo', function (val) {
+        val.should.equal('done')
+        done()
+      })
 
-      cb.called.should.be.false
-      done(null, 'done')
-      cb.hasValue('done')
+      end(null, 'done')
     })
 
-    it('Box function can get values of other boxes via getter passed in the first param', function () {
-      app.def('foo', function (get) {
-        return get('bar') + get('baz')
-      }).def('bar', function () {
+    it('Box function can get values of other boxes via getter passed in the first param', function (done) {
+      app.def('bar', function () {
         return 'bar'
       }).def('baz', function () {
         return 'baz'
-      }).eval('bar').eval('baz').eval('foo', cb)
-      cb.hasValue('barbaz')
+      }).def('foo', function (get) {
+        get('bar').should.equal('bar')
+        get('baz').should.equal('baz')
+        done()
+      }).eval('foo')
     })
 
-    it('The getter passed to the box is relative to it`s path', function () {
+    it('The getter passed to the box is relative to it`s path', function (done) {
       function def (val) {
         app.def(val, function () {
           return val
-        }).eval(val)
+        })
       }
 
       def('a/b'); def('a/b/d'); def('a/b/c/d'); def('a/x/y')
 
       app.def('a/b/c', function (get) {
-        return [
-          get('a/b'),
-          get('./d'),
-          get('&/d'),
-          get('../x/./y')
-        ].join(' ')
-      }).eval('a/b/c', cb)
-
-      cb.hasValue('a/b a/b/d a/b/c/d a/x/y')
+        get('a/b').should.equal('a/b')
+        get('./d').should.equal('a/b/d')
+        get('&/d').should.equal('a/b/c/d')
+        get('../x/./y').should.equal('a/x/y')
+        done()
+      }).eval('a/b/c')
     })
 
     it('Evaluates all box dependencies before evaluating box itself', function () {
       var a, xxb, xc
 
       app.def('a', ['x/x/b', 'x/c'], function (_, done) {
+        log('a')
         a = done
       }).def('x/x/b', ['../c'], function (_, done) {
+        log('xxb')
         xxb = done
       }).def('x/c', function (_, done) {
+        log('xc')
         xc = done
-      }).eval('a', cb)
+      }).eval('a', function () {
+        log('done')
+      })
 
-      assert.not.exist(xxb)
+      log.should.equal('xc')
       xc()
-      assert.not.exist(a)
+      log.should.equal('xc xxb')
       xxb()
+      log.should.equal('xc xxb a')
       a()
-      cb.hasValue()
+      log.should.equal('xc xxb a done')
     })
   })
 
   describe('.set(key, val)', function () {
-    it('Defines evaluated box `key` holding `val`', function () {
-      app.set('greeting', 'hello').eval('greeting', cb)
-      cb.hasValue('hello')
+    it('Defines evaluated box `key` holding `val`', function (done) {
+      app.set('greeting', 'hello').eval('greeting', function (val) {
+        val.should.equal('hello')
+        done()
+      })
     })
   })
 
@@ -114,10 +128,8 @@ describe('App', function () {
     })
 
     it('Returns undefined if box is not evaluated', function () {
-      app.def('baz', function (get, done) {})
+      app.def('baz', function (get, done) {}).eval('baz')
       app.def('bar', function () {})
-
-      app.eval('baz')
 
       assert.not.exist(app.get('baz'))
       assert.not.exist(app.get('bar'))
@@ -174,31 +186,33 @@ describe('App', function () {
 
   describe('Error handling', function () {
     it('Exeptions from boxes are catched', function () {
-      var onerror = sinon.spy()
-      app.onerror(onerror)
-
       app.def('hello', function () {
         throw 'Hello error'
       })
 
-      app.eval('hello', cb)
+      app.onerror(function (err) {
+        log('onerror')
+        err.should.equal('Hello error')
+      })
 
-      onerror.calledWith('Hello error').should.be.true
-      cb.called.should.be.false
+      app.eval('hello', function () {
+        log('done')
+      })
+
+      log.should.equal('onerror')
     })
 
     it('Supports async errors', function () {
-      var onerror = sinon.spy()
-      app.onerror(onerror)
-
       app.def('hello', function (_, done) {
         done('Hello error')
+      }).onerror(function (err) {
+        log('onerror')
+        err.should.equal('Hello error')
+      }).eval('hello', function () {
+        log('done')
       })
 
-      app.eval('hello', cb)
-
-      onerror.calledWith('Hello error').should.be.true
-      cb.called.should.be.false
+      log.should.equal('onerror')
     })
 
     it('Errors are bubbling', function () {
@@ -206,23 +220,22 @@ describe('App', function () {
         throw 'error'
       })
 
-      var calls = ''
 
       app.onerror('hello/world/path', function (err) {
+        log('1')
         err.should.equal('error')
-        calls += '1'
         throw '1'
       })
 
       app.onerror('hello/world', function (err, raise) {
+        log('2')
         err.should.equal('1')
-        calls += '2'
         raise('2')
       })
 
       app.onerror('hello', function (err, raise) {
+        log('3')
         err.should.equal('2')
-        calls += '3'
       })
 
       app.onerror(function (err) {
@@ -231,7 +244,7 @@ describe('App', function () {
 
       app.eval('hello/world/path')
 
-      calls.should.equal('123')
+      log.should.equal('1 2 3')
     })
 
     it('`raise` function passed to the handler can be used as a node style callback', function () {
@@ -243,9 +256,13 @@ describe('App', function () {
         raise(null, err)
       })
 
-      app.onerror(cb)
+      app.onerror(function () {
+        log('error')
+      })
+
       app.eval('hello')
-      cb.called.should.be.false
+
+      log.should.be.empty
     })
 
     it('Errors of the app level handler are throwed', function () {
@@ -284,73 +301,89 @@ describe('App', function () {
   })
 
   describe('Hooks', function () {
-    var calls
-
-    beforeEach(function () {
-      calls = ''
-    })
-
     describe('before hook', function () {
       it('Should be executed before box and it`s dependencies', function () {
-        app.def('foo', ['bar'], function (get) {
-          calls += 'foo;'
-        }).def('bar', function () {
-          calls += 'bar;'
-        }).before('foo', function () {
-          calls += 'before;'
-        }).eval('foo')
+        app
+          .def('foo', ['bar'], function () {
+            log('foo')
+          })
+          .def('bar', function () {
+            log('bar')
+          })
+          .before('foo', function () {
+            log('before')
+          })
+          .eval('foo')
 
-        calls.should.equal('before;bar;foo;')
+        log.should.equal('before bar foo')
       })
 
       it('Last defined should be executed first', function () {
-        app.def('foo', function () {
-          calls += 'foo;'
-        }).before('foo', function () {
-          calls += 'hook1;'
-        }).before('foo', function () {
-          calls += 'hook2;'
-        }).eval('foo')
+        app
+          .def('foo', function () {
+            log('foo')
+          })
+          .before('foo', function () {
+            log('hook1')
+          })
+          .before('foo', function () {
+            log('hook2')
+          })
+          .eval('foo')
 
-        calls.should.be.equal('hook2;hook1;foo;')
+        log.should.equal('hook2 hook1 foo')
       })
 
       it('Should support asynchrony', function () {
         var hookDone
 
-        app.def('foo', function () {
-          calls += 'foo;'
-        }).before('foo', function (get, done) {
-          hookDone = done
-        }).eval('foo')
+        app
+          .def('foo', function () {
+            log('foo')
+          })
+          .before('foo', function (get, done) {
+            hookDone = done
+          })
+          .eval('foo')
 
-        calls.should.equal('')
+        log.should.be.empty
         hookDone()
-        calls.should.equal('foo;')
+        log.should.equal('foo')
       })
 
       it('Can have dependencies', function () {
         app.def('foo/bar', function () {
-          calls += 'foo/bar;'
+          log('foo/bar')
           return 'bar'
         }).def('foo', function () {
-          calls += 'foo;'
+          log('foo')
         }).before('foo', function (get) {
-          calls += 'before-foo;'
+          log('before-foo')
           get('&/bar').should.equal('bar')
           this.get('&/bar').should.equal('bar')
         }).eval('foo')
 
-        calls.should.equal('foo/bar;before-foo;foo;')
+        log.should.equal('foo/bar before-foo foo')
       })
 
-      it('Should throw errors at box path', function (done) {
-        app.before('foo', function () {
-          throw 'error'
-        }).onerror('foo', function (err) {
-          err.should.equal('error')
-          done()
-        }).eval('foo')
+      describe('Should throw errors at box path', function () {
+        it('sync', function (done) {
+          app.before('foo', function () {
+            throw 'error'
+          }).onerror('foo', function (err) {
+            err.should.equal('error')
+            done()
+          }).eval('foo')
+        })
+
+        it('async', function (done) {
+          app.before('foo', function (get, end) {
+            end('error')
+          }).onerror('foo', function (err) {
+            err.should.equal('error')
+            done()
+          }).eval('foo')
+        })
       })
     })
 
@@ -373,108 +406,138 @@ describe('App', function () {
       it('Should support asynchrony', function () {
         var afterDone
 
-        app.def('foo', function () {
-          calls += 'foo;'
-        }).after('foo', function (get, val, done) {
-          calls += 'after;'
-          afterDone = done
-        }).eval('foo', function () {
-          calls += 'done;'
-        })
+        app
+          .def('foo', function () {
+            log('foo')
+          })
+          .after('foo', function (get, val, done) {
+            log('after')
+            afterDone = done
+          })
+          .eval('foo', function () {
+            log('done')
+          })
 
-        calls.should.equal('foo;after;')
+        log.should.equal('foo after')
         afterDone(null, 10)
-        calls.should.equal('foo;after;done;')
+        log.should.equal('foo after done')
         app.get('foo').should.equal(10)
       })
 
       it('Can have dependencies', function () {
         app.def('foo/bar', function () {
-          calls += 'foo/bar;'
+          log('foo/bar')
           return 'bar'
         }).def('foo/baz', function () {
-          calls += 'foo/baz;'
-        }).after('foo/baz', ['./bar'], function (get) {
+          log('foo/baz')
+        }).after('foo/baz', ['./bar'], function () {
           this.get('./bar').should.equal('bar')
-          calls += 'after:foo/baz;'
+          log('after:foo/baz')
         }).eval('foo/baz')
 
-        calls.should.equal('foo/baz;foo/bar;after:foo/baz;')
+        log.should.equal('foo/baz foo/bar after:foo/baz')
+      })
+
+      describe('Should throw errors at box path', function () {
+        it('sync', function (done) {
+          app.after('foo', function () {
+            throw 'error'
+          }).onerror('foo', function (err) {
+            err.should.equal('error')
+            done()
+          }).eval('foo')
+        })
+
+        it('async', function (done) {
+          app.after('foo', function (get, val, end) {
+            end('error')
+          }).onerror('foo', function (err) {
+            err.should.equal('error')
+            done()
+          }).eval('foo')
+        })
       })
 
     })
 
     it('Can be defined before box', function () {
-      app.before('foo', function () {
-        calls += 'before;'
-      }).after('foo', function () {
-        calls += 'after;'
-      }).def('foo', function () {
-        calls += 'foo;'
-      }).eval('foo')
+      app
+        .before('foo', function () {
+          log('before')
+        })
+        .after('foo', function () {
+          log('after')
+        })
+        .def('foo', function () {
+          log('foo')
+        })
+        .eval('foo')
 
-      calls.should.equal('before;foo;after;')
+      log.should.equal('before foo after')
     })
 
 
     it('Can be defined before .set()', function () {
-      app.before('foo', function () {
-        calls += 'before;'
-      }).after('foo', function () {
-        calls += 'after;'
-      })
-
-      app.set('foo', 'bar')
+      app
+        .before('foo', function () {
+          log('before')
+        })
+        .after('foo', function () {
+          log('after')
+        })
+        .set('foo', 'bar')
 
       assert.not.exist(app.get('foo'))
 
       app.eval('foo')
 
-      calls.should.equal('before;after;')
+      log.should.equal('before after')
     })
 
     it('Should be inherited from prototype app', function () {
       var proto = new App
 
-      proto.before('foo', function () {
-        calls += 'proto-before;'
-      }).after('foo', function () {
-        calls += 'proto-after;'
-      })
+      proto
+        .before('foo', function () {
+          log('proto-before')
+        })
+        .after('foo', function () {
+          log('proto-after')
+        })
+        .def('foo', function () {
+          log('foo')
+        })
 
-      proto.def('foo', function () {
-        calls += 'foo;'
-      })
+      proto.run()
+        .before('foo', function () {
+          log('self-before')
+        })
+        .after('foo', function () {
+          log('self-after')
+        })
+        .eval('foo')
 
-      var app = proto.run()
-
-      app.before('foo', function () {
-        calls += 'self-before;'
-      }).after('foo', function () {
-        calls += 'self-after;'
-      })
-
-      app.eval('foo')
-
-      calls.should.equal('self-before;proto-before;foo;proto-after;self-after;')
+      log.should.equal('self-before proto-before foo proto-after self-after')
     })
 
     it('Should not touch prototype app', function () {
       var proto = new App
 
       proto.def('foo', function () {
-        calls += 'foo;'
+        log('foo')
       })
 
-      proto.run().before('foo', function () {
-        calls += 'before;'
-      }).after('foo', function () {
-        calls += 'after;'
-      })
+      proto.run()
+        .before('foo', function () {
+          log('before')
+        })
+        .after('foo', function () {
+          log('after')
+        })
 
       proto.eval('foo')
 
-      calls.should.equal('foo;')
+      log.should.equal('foo')
     })
   })
 })

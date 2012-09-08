@@ -1,6 +1,6 @@
 var resolve = require('../lib/util').resolvePath
 
-describe('Path resolve', function () {
+describe('util.pathResolve(from, to)', function () {
   test('a/b/c', 'd/f', 'd/f')
   test('a/b/c', './f', 'a/b/f')
   test('a/b/c', '../g', 'a/g')
@@ -11,7 +11,7 @@ describe('Path resolve', function () {
 })
 
 function test (from, to, res) {
-  it(from + ' -> ' + to + '= ' + res, function () {
+  it(from + ' -> ' + to + ' = ' + res, function () {
     resolve(from, to).should.equal(res)
   })
 }

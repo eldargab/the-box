@@ -1,6 +1,6 @@
 var parse = require('../lib/util').parseDeps
 
-describe('Dependencies parsing', function () {
+describe('util.parseDeps(fn)', function () {
   it('Should determine getter name', function () {
     parse(function (req) {
       req('foo')

@@ -9,8 +9,7 @@
   "devDependencies": {
     "should": "*",
     "should-as-global": "*",
-    "mocha": "*",
-    "sinon": "*"
+    "mocha": "*"
   },
   "author": "Eldar Gabdullin <eldargab@gmail.com>",
   "license": "MIT"
