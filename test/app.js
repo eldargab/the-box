@@ -190,8 +190,8 @@ describe('App', function () {
       })
 
       app.onerror(function (err) {
-        log('onerror')
         err.should.equal('Hello error')
+        log('onerror')
       })
 
       app.eval('hello', function () {
@@ -205,8 +205,8 @@ describe('App', function () {
       app.def('hello', function (_, done) {
         done('Hello error')
       }).onerror(function (err) {
-        log('onerror')
         err.should.equal('Hello error')
+        log('onerror')
       }).eval('hello', function () {
         log('done')
       })
@@ -221,20 +221,20 @@ describe('App', function () {
 
 
       app.onerror('hello/world/path', function (err) {
-        log('1')
         err.should.equal('error')
+        log('1')
         throw '1'
       })
 
       app.onerror('hello/world', function (err, raise) {
-        log('2')
         err.should.equal('1')
+        log('2')
         raise('2')
       })
 
       app.onerror('hello', function (err, raise) {
-        log('3')
         err.should.equal('2')
+        log('3')
       })
 
       app.onerror(function (err) {
@@ -359,9 +359,9 @@ describe('App', function () {
         }).def('foo', function () {
           log('foo')
         }).before('foo', function (get) {
-          log('before-foo')
           get('./bar').should.equal('bar')
           this.get('./bar').should.equal('bar')
+          log('before-foo')
         }).eval('foo')
 
         log.should.equal('foo/bar before-foo foo')
