@@ -159,9 +159,9 @@ describe('App', function () {
     })
   })
 
-  describe('.prefix(root)', function () {
+  describe('.at(root)', function () {
     it('Creates proxy which resolves all paths relative to `root`', function () {
-      var proxy = app.prefix('root')
+      var proxy = app.at('root')
 
       app.set('root/foo', 'foo')
       proxy.get('./foo').should.equal('foo')
