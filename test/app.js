@@ -72,22 +72,21 @@ describe('App', function () {
 
       app.def('a/b/c', function (get) {
         get('a/b').should.equal('a/b')
-        get('./d').should.equal('a/b/d')
-        get('&/d').should.equal('a/b/c/d')
-        get('../x/./y').should.equal('a/x/y')
+        get('./d').should.equal('a/b/c/d')
+        get('../../x/./y').should.equal('a/x/y')
         done()
       }).eval('a/b/c')
     })
 
     it('Evaluates all box dependencies before evaluating box itself', function () {
-      var a, xxb, xc
+      var a, xb, xc
 
-      app.def('a', ['x/x/b', 'x/c'], function (_, done) {
+      app.def('a', ['x/b', 'x/c'], function (_, done) {
         log('a')
         a = done
-      }).def('x/x/b', ['../c'], function (_, done) {
-        log('xxb')
-        xxb = done
+      }).def('x/b', ['../c'], function (_, done) {
+        log('xb')
+        xb = done
       }).def('x/c', function (_, done) {
         log('xc')
         xc = done
@@ -97,11 +96,11 @@ describe('App', function () {
 
       log.should.equal('xc')
       xc()
-      log.should.equal('xc xxb')
-      xxb()
-      log.should.equal('xc xxb a')
+      log.should.equal('xc xb')
+      xb()
+      log.should.equal('xc xb a')
       a()
-      log.should.equal('xc xxb a done')
+      log.should.equal('xc xb a done')
     })
   })
 
@@ -165,21 +164,21 @@ describe('App', function () {
       var proxy = app.prefix('root')
 
       app.set('root/foo', 'foo')
-      proxy.get('&/foo').should.equal('foo')
+      proxy.get('./foo').should.equal('foo')
 
-      proxy.set('&/baz', 'baz')
+      proxy.set('./baz', 'baz')
       app.get('root/baz').should.equal('baz')
 
       app.set('hi', 'hi')
       proxy.get('hi').should.equal('hi')
-      proxy.isReady('./hi').should.be.true
+      proxy.isReady('../hi').should.be.true
 
-      proxy.def('&/hello', function (get) {
-        return get('&/world') + ' ' + get('./people')
+      proxy.def('./hello', function (get) {
+        return get('./world') + ' ' + get('../people')
       })
       app.set('root/hello/world', 'world')
-      proxy.set('&/people', 'people')
-      proxy.eval('&/hello')
+      proxy.set('./people', 'people')
+      proxy.eval('./hello')
       app.get('root/hello').should.equal('world people')
     })
    })
@@ -287,12 +286,14 @@ describe('App', function () {
       })
 
       app.onerror('foo', function (err) {
-        this.get('&/bar').should.equal('bar')
+        this.get('./bar').should.equal('bar')
+        log('onerror')
         throw err
       })
 
       app.onerror(function () {
         this.should.equal(app)
+        log.should.equal('onerror')
         done()
       })
 
@@ -359,8 +360,8 @@ describe('App', function () {
           log('foo')
         }).before('foo', function (get) {
           log('before-foo')
-          get('&/bar').should.equal('bar')
-          this.get('&/bar').should.equal('bar')
+          get('./bar').should.equal('bar')
+          this.get('./bar').should.equal('bar')
         }).eval('foo')
 
         log.should.equal('foo/bar before-foo foo')
@@ -430,8 +431,8 @@ describe('App', function () {
           return 'bar'
         }).def('foo/baz', function () {
           log('foo/baz')
-        }).after('foo/baz', ['./bar'], function () {
-          this.get('./bar').should.equal('bar')
+        }).after('foo/baz', ['../bar'], function () {
+          this.get('../bar').should.equal('bar')
           log('after:foo/baz')
         }).eval('foo/baz')
 
