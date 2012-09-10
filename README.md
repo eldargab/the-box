@@ -14,7 +14,7 @@ db.collection('users').find({id: {$in: user.friends}}, function (err, docs) {
 ```
 
 Actually it is a very neat peace of code except that there is no way to require
-"response" with node.js require system.
+`response` with node.js require system.
 
 This project is about making the above snippet fully functional and it seems it
 succeeded. It completely removes artificial boundary between static, boot-time,
@@ -225,9 +225,9 @@ app.eval('foo/bar/baz')
 
 ### Hooks
 
-It is possible to define `before` and `after` hooks for any box. Before hooks
+It is possible to define `before` and `after` hooks for any box. `Before` hooks
 are ordinal boxes which are executed before "main" box and it's dependencies.
-After hooks are also boxes (they can have dependencies, etc) but their signature
+`After` hooks are also boxes (they can have dependencies, etc) but their signature
 is slightly different.
 
 ``` javascript
