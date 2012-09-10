@@ -13,7 +13,7 @@ db.collection('users').find({id: {$in: user.friends}}, function (err, docs) {
 })
 ```
 
-Actually it is a very neat peace of code except that there is no way to require
+Actually it is a very neat piece of code except that there is no way to require
 `response` with node.js require system.
 
 This project is about making the above snippet fully functional and it seems it
@@ -21,9 +21,9 @@ succeeded. It completely removes artificial boundary between static, boot-time,
 request-time, whatever-time dependencies allowing you super easily define as
 many layers as you want while completely freeing modules from dependency issues.
 This project was inspired by [The-Kiln](https://github.com/straszheimjeffrey/The-Kiln)
-and is nothing but implementation of
+and is nothing but an implementation of
 [dependency based computational model :)](http://martinfowler.com/articles/rake.html#DependencyBasedProgramming)
-similar to these ones used by build systems (like rake, make) and by node.js
+similar to what is used by build systems (like rake, make) and by node.js
 `require`.
 
 ## How it looks like
@@ -102,7 +102,7 @@ app.def('db', function (get) {
   return require('monk')(get('db-connection-string'))
 })
 ```
-and framework ensures that before evaluation of the box all it's dependencies
+and framework ensures that before evaluation of the box all its dependencies
 were evaluated. There are two ways to specify dependencies
 
 ``` javascript
