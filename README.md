@@ -20,9 +20,9 @@ This project is about making the above snippet fully functional and it seems it
 succeeded. It completely removes artificial boundary between static, boot-time,
 request-time, whatever-time dependencies allowing you super easily define as
 many layers as you want while completely freeing modules from dependency issues.
-This project was inspired by [The-Kiln](https://github.com/straszheimjeffrey
-/The-Kiln) and is nothing but implementation of [dependency based computational
-model :)](http://martinfowler.com/articles/rake.html#DependencyBasedProgramming)
+This project was inspired by [The-Kiln](https://github.com/straszheimjeffrey/The-Kiln)
+and is nothing but implementation of
+[dependency based computational model :)](http://martinfowler.com/articles/rake.html#DependencyBasedProgramming)
 similar to these ones used by build systems (like rake, make) and by node.js
 `require`.
 
