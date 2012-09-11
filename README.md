@@ -155,7 +155,7 @@ There is a concept of path
 app.def('a/b/c', function (get) {
   get('a/b').should.equal('a/b')
   get('./d').should.equal('a/b/c/d')
-  get('../x').should.equal('a/x')
+  get('../x').should.equal('a/b/x')
 })
 ```
 
