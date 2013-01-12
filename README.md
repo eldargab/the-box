@@ -1,3 +1,7 @@
+# Deprecated
+
+This project is deprecated. Use [easy-app](http://github.com/eldargab/easy-app) instead.
+
 # the-box
 
 Can you see what's wrong with this code?
